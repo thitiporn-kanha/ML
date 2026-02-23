@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+      - name: Install requirements
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Smoke test imports
+        run: |
+          python - <<'PY'
+import pandas, sklearn, joblib
+print('smoke imports ok')
+PY
+      - name: List projects
+        run: ls -la
