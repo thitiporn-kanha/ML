@@ -1,0 +1,10 @@
+/.venv
+results/
+*.joblib
+__pycache__/
+*.pyc
+.DS_Store
+run.log
+run_debug.log
+/.vscode
+/.idea

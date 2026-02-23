@@ -1,0 +1,167 @@
+README — Logistic Regression (ภาษาไทย)
+
+สรุปสั้น ๆ
+ - โฟลเดอร์นี้เป็นโปรเจคตัวอย่าง Logistic Regression (classification) ที่อ่านไฟล์ CSV จาก `logistic/data/` ทำ preprocessing, เทรนด้วย LogisticRegression พร้อม GridSearchCV แล้วบันทึกผลไว้ที่ `logistic/results/`.
+
+โครงสร้างไฟล์ที่สำคัญ
+ - `main.py` : สคริปต์หลักที่จะรันการเทรนและประเมินผล
+ - `data/` : วางไฟล์ dataset (CSV) ที่จะใช้ เช่น `train_and_test2.csv`
+ - `results/` : โฟลเดอร์ที่สคริปต์จะเขียนผลลัพธ์ (จะถูกสร้างอัตโนมัติ)
+	- `results.json` : ค่า metrics และพารามิเตอร์ที่ดีที่สุด
+	- `confusion_matrix.png` : รูป heatmap ของ confusion matrix
+	- `roc_curve.png` : รูป ROC curve (ถ้ามี probability สำหรับ binary)
+	- `model.joblib` : โมเดล (pipeline) เก็บไว้เรียกใช้ต่อ
+
+ข้อควรทราบก่อนเริ่ม
+ - สคริปต์คาดว่า target column ชื่อ `Survived` ถ้าชื่อคอลัมน์ต่างกัน ให้เปลี่ยนชื่อคอลัมน์ในไฟล์ CSV หรือตั้งค่า `TARGET` ใน `main.py`
+ - โค้ดจะพยายาม rename คอลัมน์ `2urvived` -> `Survived` อัตโนมัติ (dataset ตัวอย่าง)
+
+การติดตั้งและรัน (step-by-step)
+1) เปิด Terminal แล้วเข้าโฟลเดอร์โปรเจค
+```bash
+cd /Users/imac04/Downloads/ML/logistic
+```
+
+2) สร้างและ activate virtual environment (แนะนำ)
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+3) ติดตั้ง dependencies (จากไฟล์ requirements.txt ที่ root ของโปรเจค)
+```bash
+pip install -r ../requirements.txt
+```
+
+4) รันสคริปต์ (มี 3 วิธี เลือกวิธีใดวิธีหนึ่ง)
+- แบบที่แนะนำ (ขณะเปิด venv):
+```bash
+python main.py
+```
+- แบบ explicit (ถ้าไม่ใช้ venv):
+```bash
+python3 main.py
+```
+- แบบรันไฟล์โดยตรง (shebang ถูกเพิ่มแล้ว):
+```bash
+./main.py
+```
+
+5) ถ้าต้องการเก็บ log ของการรันเพื่อตรวจสอบข้อผิดพลาด
+```bash
+python main.py 2>&1 | tee run.log
+tail -n 200 run.log
+```
+
+ผลลัพธ์ที่จะได้หลังรัน
+ - โฟลเดอร์ `results/` จะถูกสร้าง (ถ้ายังไม่มี) และมีไฟล์หลัก ๆ ดังนี้:
+	- `results.json` : เก็บตัวเลข metric (accuracy, precision, recall, f1), `best_params` จาก GridSearchCV, ขนาดชุดข้อมูล (`n_train`, `n_test`) และ `roc_auc` ถ้ามี
+	- `confusion_matrix.png` : heatmap ของ confusion matrix — ดูว่ามี false positive/false negative เท่าไร
+	- `roc_curve.png` : ROC curve (ถ้ามี probability ของ positive class) — ค่าพื้นที่ใต้เส้น (AUC) สูงคือดี
+	- `model.joblib` : บันทึก pipeline ทั้งหมด (preprocessing + model) เพื่อโหลดกลับมาทำนายกับข้อมูลใหม่
+
+คำอธิบายค่าที่สำคัญ (สำหรับคนไม่รู้พื้นฐาน)
+ - accuracy : สัดส่วนการทำนายถูกต้องทั้งหมด (ตัวอย่าง: 0.7 แปลว่าทำนายถูก 70%)
+ - precision (สำหรับคลาสบวก) : จากที่โมเดลทำนายว่าเป็นบวก มีสัดส่วนถูกต้องเท่าไร (TP / (TP + FP))
+ - recall (sensitivity) : จากข้อมูลที่เป็นบวกจริง โมเดลจับได้กี่เปอร์เซ็นต์ (TP / (TP + FN))
+ - f1 : ค่าเฉลี่ยเชิงฮาร์มอนิคของ precision และ recall — ดีเมื่อต้องการสมดุลทั้งสอง
+ - roc_auc : ค่าพื้นที่ใต้ ROC curve (0.5 = แบบสุ่ม, 1.0 = ดีที่สุด)
+
+การตีความ Confusion Matrix (2x2)
+ - บนซ้าย (TN) : จำนวนตัวอย่างที่เป็นลบและทำนายเป็นลบ (ถูก)
+ - บนขวา (FP) : จำนวนที่เป็นลบแต่ทำนายเป็นบวก (ผิด)
+ - ล่างซ้าย (FN) : จำนวนที่เป็นบวกแต่ทำนายเป็นลบ (ผิด)
+ - ล่างขวา (TP) : จำนวนที่เป็นบวกและทำนายเป็นบวก (ถูก)
+
+ตัวอย่างการเปิดผลบน macOS
+```bash
+open results/confusion_matrix.png
+open results/roc_curve.png
+cat results/results.json | python -m json.tool
+```
+
+วิธีโหลดโมเดลกลับมาใช้งาน (ตัวอย่าง Python)
+```python
+from joblib import load
+model = load('results/model.joblib')
+import pandas as pd
+df = pd.read_csv('data/train_and_test2.csv')
+X = df.drop(columns=['Survived'])  # ปรับตาม dataset ของคุณ
+pred = model.predict(X)
+```
+
+ข้อควรระวังและคำแนะนำเพิ่มเติม
+ - ถ้าชุดข้อมูลมี class imbalance (จำนวน positive น้อยกว่า negative มาก) อย่าเชื่อ accuracy อย่างเดียว ให้ดู precision/recall/roc_auc
+ - ถ้า OneHotEncoder สร้าง column จำนวนมาก อาจต้องเลือก feature หรือลด cardinality ของ categorical
+ - ถ้าต้องปรับพารามิเตอร์เพิ่มเติม ให้แก้ `param_grid` ใน `main.py` (ปัจจุบันมีการค้นหา C ของ Logistic)
+
+วิธีเปลี่ยน dataset หรือ target
+ - ถ้าอยากใช้ไฟล์ CSV อื่น ให้วางไฟล์ไว้ที่ `logistic/data/` แล้วเปลี่ยนชื่อค่า `DATA_FILE` หรือแก้ชื่อไฟล์ใน `main.py`
+ - ถ้าชื่อคอลัมน์ target ไม่ใช่ `Survived` ให้แก้ตัวแปร `TARGET` ใน `main.py` หรือเปลี่ยนชื่อคอลัมน์ใน CSV
+
+ถ้าต้องส่งรายงาน/อธิบายผลงานให้อาจารย์
+ - แนบ `results/results.json` (ตัวเลข metric + best_params) และรูป `confusion_matrix.png`/`roc_curve.png`
+ - อธิบายสั้น ๆ ว่าใช้ preprocessing แบบไหน (scaling, one-hot), วิธีแบ่ง train/test (test_size=0.2, stratify ถ้าเป็น binary) และว่ามีการ tune พารามิเตอร์ด้วย GridSearchCV
+
+ช่วยเพิ่มเติม (ถ้าต้องการ)
+ - ผมสามารถสร้างไฟล์ `logistic/README_EN.md` เวอร์ชันภาษาอังกฤษให้สำหรับการส่งงานสากล
+ - สร้าง Jupyter notebook สำหรับ EDA และรายงาน
+ - ทำให้ `main.py` รับ argument (`--data`, `--target`, `--out`) เพื่อใช้งานยืดหยุ่น
+
+ถ้าต้องการให้ผมทำต่อ (เช่น สร้าง notebook หรือปรับ `main.py` ให้รับ args) ให้บอกผมได้เลย
+
+ไฟล์สำคัญ
+ - `main.py` : สคริปต์หลัก (สามารถรันด้วย `python`, `python3` หรือ `./main.py` ถ้าเป็น executable)
+ - `data/` : วางไฟล์ CSV ที่จะใช้ (ตัวอย่าง `train_and_test2.csv`)
+ - `results/` : ผลลัพธ์ (จะถูกสร้างอัตโนมัติ)
+
+วิธีเตรียม (แนะนำใช้ virtualenv)
+1) สร้างและเข้า virtualenv
+```bash
+cd /Users/imac04/Downloads/ML/logistic
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+2) ติดตั้ง dependencies (จากไฟล์ `requirements.txt` ของโปรเจค root)
+```bash
+pip install -r ../requirements.txt
+```
+
+รันสคริปต์ (มี 3 วิธี)
+- รันภายใน venv (แนะนำ):
+```bash
+python main.py
+```
+- รัน explicit ด้วย python3 (ถ้าไม่ใช้ venv):
+```bash
+python3 main.py
+```
+- รันเป็น executable (shebang ถูกเพิ่มแล้ว):
+```bash
+./main.py
+```
+
+ผลลัพธ์ที่สร้าง (ใน `results/`)
+- `results.json` : metrics และพารามิเตอร์ที่ดีที่สุด
+- `confusion_matrix.png` : heatmap of confusion matrix
+- `roc_curve.png` : ROC curve (ถ้ามี probability)
+- `model.joblib` : model/pipeline เก็บไว้เรียกใช้ต่อ
+
+การตั้งค่าไฟล์ CSV
+ - สคริปต์จะมองหา column ชื่อ `Survived` เป็น target; ถาไฟล์ของคุณมีชื่ออื่นให้แก้ตัวแปร `TARGET` ใน `main.py` หรือเปลี่ยนชื่อคอลัมน์ในไฟล์ CSV
+ - สคริปต์จะพยายาม rename คอลัมน์ `2urvived` -> `Survived` อัตโนมัติ (dataset ตัวอย่าง)
+
+ข้อแนะนำเพิ่มเติม
+ - ตรวจสอบความสมดุลของคลาสก่อน (class imbalance): หากไม่สมดุล ควรพิจารณาเพิ่ม `class_weight='balanced'` (มีแล้ว) หรือใช้ SMOTE/oversampling
+ - ถ้าต้องการ tuning เพิ่มเติม ปรับ `param_grid` ใน `main.py` หรือเพิ่ม `RandomizedSearchCV`
+
+ปัญหาที่อาจเจอและวิธีแก้
+ - หากเจอ `ModuleNotFoundError` ให้แน่ใจว่า activate venv และติดตั้ง dependencies
+ - หาก `./main.py` ขึ้น `Permission denied` ให้รัน `chmod +x main.py`
+
+ถ้าต้องการ ผมจะช่วยปรับ `main.py` ให้รับ argument ผ่าน CLI (`--data`, `--target`) หรือสร้าง notebook สำหรับ EDA — บอกมาได้เลย
+
+Contact / Notes
+ - เก็บผลลัพธ์ไว้ที่ `logistic/results/` เพื่อให้ dashboard อ่านได้โดยง่าย
+

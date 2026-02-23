@@ -1,0 +1,7 @@
+{
+  "best_params": {
+    "clf__C": 1.0
+  },
+  "n_train": 1047,
+  "n_test": 262
+}
