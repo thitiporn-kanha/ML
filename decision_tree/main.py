@@ -22,7 +22,10 @@ def main(data_file='data/data.csv', target='target', out_dir='results'):
         raise SystemExit(f"Target column '{target}' not found")
     X = df.drop(columns=[target])
     y = df[target]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Encode categorical features (simple one-hot); tree models don't need scaling
+    X = pd.get_dummies(X, drop_first=True)
+    # stratify to preserve class balance
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
     clf = DecisionTreeClassifier(random_state=42)
     clf.fit(X_train, y_train)
@@ -30,7 +33,8 @@ def main(data_file='data/data.csv', target='target', out_dir='results'):
     y_pred = clf.predict(X_test)
     metrics = {
         'accuracy': float(accuracy_score(y_test, y_pred)),
-        'report': classification_report(y_test, y_pred, output_dict=True)
+        'report': classification_report(y_test, y_pred, output_dict=True),
+        'confusion_matrix': confusion_matrix(y_test, y_pred).tolist()
     }
     (out / 'results.json').write_text(json.dumps(metrics, indent=2))
     dump(clf, out / 'model.joblib')
