@@ -34,6 +34,31 @@ case "$CMD" in
     cd "$ROOT/linear"
     python main.py
     ;;
+  random_forest)
+    echo "Running random_forest..."
+    cd "$ROOT/random_forest"
+    python main.py
+    ;;
+  svm)
+    echo "Running svm..."
+    cd "$ROOT/svm"
+    python main.py
+    ;;
+  knn)
+    echo "Running knn..."
+    cd "$ROOT/knn"
+    python main.py
+    ;;
+  nn)
+    echo "Running nn..."
+    cd "$ROOT/nn"
+    python main.py
+    ;;
+  kmeans)
+    echo "Running kmeans..."
+    cd "$ROOT/kmeans"
+    python main.py
+    ;;
   all)
     echo "Running logistic then linear..."
     cd "$ROOT/logistic" && python main.py
